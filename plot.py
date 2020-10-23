@@ -3,7 +3,7 @@ import operator
 import matplotlib.pyplot as plt
 
 
-def plot(points, path: list):
+def plot(points, path):
     x = []
     y = []
     for point in points:
