@@ -1,4 +1,4 @@
-# Script que implementa Ant-Colony bi-objetivo propuesto por [Ghoseri et al 2010 ], el cual esta basado en [Dorigo 1997]
+# Script que implementa Ant-Colony bi-objetivo propuesto por [ghoseiri et al 2016 ], el cual esta basado en [Dorigo 1997]
 # Así mismo, se van a utilizar las funciones de costo transporte y costo interacción de ProyectoGrado
 # Para este escenario de prueba, se utilizara el edificio SD y el edificio Ga como nodo origen y destino respectivamente
 
@@ -11,8 +11,8 @@ class Graph(object):
         :param cost_matrix:
         :param rank: rank of the cost matrix (Number of nodes, or in this case, number of cities)
         """
-        self.f1_matrix = f1_cost_matrix
-        self.f2_matrix = f2_cost_matrix
+        self.f1_cost = f1_cost_matrix
+        self.f2_cost = f2_cost_matrix
         self.numNodes = numNodes
         # noinspection PyUnusedLocal
 
@@ -24,7 +24,7 @@ class Graph(object):
 
 
 class ACO(object):
-    def __init__(self, ant_count, generations, alpha, beta, phi, rho, q0,
+    def __init__(self, ant_count, generations, alpha, beta, phi, rho, Q, q0, a, b, epsilon,
                  strategy):
         """
         :param ant_count:
@@ -35,22 +35,20 @@ class ACO(object):
         :param q: pheromone intensity
         :param strategy: pheromone update strategy. 0 - ant-cycle, 1 - ant-quality, 2 - ant-density
         """
-        self.Q = random.uniform(0,1)
+        self.Q = Q
+        self.q = random.uniform(0,1)
         self.q0 = q0
         self.phi = phi
         self.rho = rho
         self.beta = beta
         self.alpha = alpha
+        self.epsilon = epsilon
+        self.a = a
+        self.b = b
         self.ant_count = ant_count
         self.generations = generations
         self.update_strategy = strategy
 
-    def local_update_pheromone(self, graph, ants):
-        for i, row in enumerate(graph.f1_pheromone):
-            for j, col in enumerate(row):
-
-                graph.f1_pheromone[i][j] *= self.phi
-                graph.f2_pheromone[i][j] *= self.phi
 
     def global_update_pheromone(self, graph, ants):
         for i, row in enumerate(graph.pheromone):
@@ -59,10 +57,48 @@ class ACO(object):
                 graph.f1_pheromone[i][j] *= self.rho
                 graph.f2_pheromone[i][j] *= self.rho
 
-                graph.f1_pheromone[i][j] = min(1, graph.f1_pheromone[i][j] + (graph.numNodes/graph.f1_matrix[i][j]) )
-                graph.f2_pheromone[i][j] = min(1, graph.f2_pheromone[i][j] + (graph.numNodes/graph.f2_matrix[i][j]) )
+                for ant in ants:
+
+                    graph.f1_pheromone[i][j] += ant.f1_local_pheromone[i][j]
+                    graph.f2_pheromone[i][j] += ant.f2_local_pheromone[i][j]
+
+            graph.f1_pheromone[i][j] = min(1, graph.f1_pheromone[i][j] + (graph.numNodes/graph.f1_cost[i][j]) )
+            graph.f2_pheromone[i][j] = min(1, graph.f2_pheromone[i][j] + (graph.numNodes/graph.f2_cost[i][j]) )
 
     # noinspection PyProtectedMember
+
+    def get_max_values_costs():
+
+        max_f1 = -1
+        max_f2 = -1
+
+        for i in range(numNodes):
+            for j in range(numNodes):
+
+                if max_f1 < self.graph.f1_cost[i][j]:
+                    max_f1 = self.graph.f1_cost[i][j]
+                
+                if max_f2 < self.graph.f2_cost[i][j]:
+                    max_f2 = self.graph.f2_cost[i][j]
+
+        return max_f1,max_f2
+
+    def get_min_values_costs():
+
+        min_f1 = 999
+        min_f2 = 999
+
+        for i in range(numNodes):
+            for j in range(numNodes):
+
+                if min_f1 > self.graph.f1_cost[i][j]:
+                    min_f1 = self.graph.f1_cost[i][j]
+                
+                if min_f2 > self.graph.f2_cost[i][j]:
+                    min_f2 = self.graph.f2_cost[i][j]
+
+        return min_f1,min_f2
+        
     def solve(self, graph, dic_edificios_nodos):
         """
         :param graph:
@@ -72,18 +108,18 @@ class ACO(object):
         for gen in range(self.generations):
             # noinspection PyUnusedLocal
             # 0. Preparing a new colony
-            ants = [_Ant(self, graph,dic_edificios_nodos) for i in range(self.ant_count)]
+            ants = [_Ant(self, i, graph,dic_edificios_nodos, self.epsilon) for i in range(self.ant_count)]
             for ant in ants:
-                for i in range(graph.rank - 1):
+                for i in range(graph.numNodes - 1):
                     # 2.0 Choose next node by applying the state transition rule 
-                    ant._select_next()
+                    ant._select_next(self.Q, self.q0, self.a, self.b)
                 ant.total_cost += graph.matrix[ant.tabu[-1]][ant.tabu[0]]
                 if ant.total_cost < best_cost:
                     best_cost = ant.total_cost
                     best_solution = [] + ant.tabu
 
                 # Apply local pheromone update
-                ant.local_update_pheromone_delta()
+                ant.local_update_pheromone()
 
             # 5. Apply global pheromone update
             self.global_update_pheromone(graph, ants)
@@ -92,16 +128,20 @@ class ACO(object):
 
 
 class _Ant(object):
-    def __init__(self, aco, graph,dic_edificios_nodos):
+    def __init__(self, index, aco, graph,dic_edificios_nodos, epsilon):
+        self.index = index
         self.colony = aco
         self.graph = graph
         self.total_cost = 0.0
         self.tabu = []  # tabu list List[ T(i,j) ]
-        self.f1_pheromone_delta = []  # the local increase of pheromone (Delta_T(i,j))
-        self.f2_pheromone_delta = []  # the local increase of pheromone (Delta_T(i,j))
+        self.f1_local_pheromone = []  # the local increase of pheromone (Delta_T(i,j))
+        self.f2_local_pheromone = []  # the local increase of pheromone (Delta_T(i,j))
         self.allowed = [i for i in range(graph.numNodes)]  # nodes which are allowed for the next selection
         self.eta = [[0 if i == j else 1 / graph.matrix[i][j] for j in range(graph.numNodes)] for i in
                     range(graph.rank)]  # heuristic information (N(i,j))
+
+        self.epsilon = epsilon
+        self.f1_eta = min(1,(max(self.graph.f1_cost)-())/() + ) 
 
         # 1. Position each ant in a starting node
         source = dic_edificios_nodos['SD']  # start from Source Node
@@ -109,9 +149,21 @@ class _Ant(object):
         self.tabu.append(source)
         self.current = source
         self.allowed.remove(source)
+    
+    # Se calcula el valor de lambda para resolver la probabilidad P(i,j), según lo enunciado en [ghoseiri2010]
+    def _calculate_Lambda(a,b):
+
+        if h <= a:
+            return 0
+        elif a < h and h < b:
+            return i/(b-a) - a/(b-a)
+        
+        elif h >= b:
+            return 1
+
 
     #2.1 Choose next node by applying the state transition rule
-    def _select_next(self):
+    def _select_next(self, q, q0, a, b, h):
 
         denominator = 0
         for i in self.allowed:
@@ -128,10 +180,27 @@ class _Ant(object):
             pass
 
         else:
+
+            ant_lambda = _calculate_Lambda(a,b)
+
+            if q <= q0:
+
+                max_p = 0    
+                max_f1_cost, max_f2_cost = self.graph.get_max_values_costs
+                min_f1_cost, min_f2_cost = self.graph.get_min_values_costs
+
+
+                for i in self.allowed:
+
+                    value = ((self.f1_local_pheromone[self.current][i])**self.colony.alpha) * 
+
             for i in range(self.graph.numNodes):
                 try:
-                    #Verifica si la hormiga puede ir al nodo j
-                    self.allowed.index(i)  # test if allowed list contains i
+                    
+                   maximun = 0 
+                   for j in self.allowed:
+                       self.graph.
+
 
                     # Eq 3
                     probabilities[i] = self.graph.pheromone[self.current][i] ** self.colony.alpha * \
@@ -154,6 +223,21 @@ class _Ant(object):
         self.tabu.append(selected)
         self.total_cost += self.graph.matrix[self.current][selected]
         self.current = selected
+
+
+    def local_update_pheromone(self):
+
+        self.f1_local_pheromone = [[0 for j in range(self.graph.numNodes)] for i in range(self.graph.numNodes)]
+        self.f2_local_pheromone = [[0 for j in range(self.graph.numNodes)] for i in range(self.graph.numNodes)] 
+
+        for i, row in enumerate(self.graph.f1_pheromone):
+            for j, col in enumerate(row):
+
+                self.f1_local_pheromone[i][j] = self.colony.Q / self.total_cost
+                self.f2_local_pheromone[i][j] = self.colony.Q / self.total_cost
+
+                self.f1_local_pheromone[i][j] *= self.phi
+                self.f2_local_pheromone[i][j] *= self.phi
 
     # noinspection PyUnusedLocal
     def _update_pheromone_delta(self):

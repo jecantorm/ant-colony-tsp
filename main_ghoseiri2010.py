@@ -1,6 +1,11 @@
+# Script que implementa Ant-Colony bi-objetivo propuesto por [ghoseiri et al 2010 ], el cual esta basado en [Dorigo 1997]
+#[ghoseiri2010]: An ant colony optimization algorithm for the bi-objective shortest path problem. Keivan Ghoseiri Behnam Nadjari
+# Así mismo, se van a utilizar las funciones de costo transporte y costo interacción de ProyectoGrado
+# Para este escenario de prueba, se utilizara el edificio SD y el edificio Ga como nodo origen y destino respectivamente
+
 import math
 
-from aco_ghoseri2010 import ACO, Graph
+from aco_ghoseiri2010 import ACO, Graph
 from plot import plot
 
 #Cargar datos de matrices imports
@@ -24,17 +29,21 @@ def main():
 
     f1_cost_matrix, f2_cost_matrix,dic_edificios_nodos, numNodes = datos.cargarDatosMatrices(h[0],h[1],h[2])
 
-    Q = 0.99
+    Q = 10
+    q0 = 0.99
     phi = 0.99
     rho = 0.99
     beta = 10.0
     alpha = 1.0
+    epsilon = 0.001
+    a = 1
+    b = 5
     ant_count = 10
     generations = 100
     update_strategy = 2
 
     # Se instancia ACO, en donde se envía como parámetro: la cantidad de ants, el número de generaciones, alpha, beta, rho, Q, Estrategia para calcular T(i,j)
-    aco = ACO(ant_count, generations, alpha, beta, phi, rho, Q, update_strategy)
+    aco = ACO(ant_count, generations, alpha, beta, phi, rho, Q, q0, a, b, epsilon, update_strategy)
     graph = Graph(f1_cost_matrix,f2_cost_matrix, numNodes)
     path, cost = aco.solve(graph, dic_edificios_nodos)
     print('cost: {}, path: {}'.format(cost, path))
