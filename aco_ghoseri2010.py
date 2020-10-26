@@ -1,20 +1,30 @@
+# Script que implementa Ant-Colony bi-objetivo propuesto por [Ghoseri et al 2010 ], el cual esta basado en [Dorigo 1997]
+# Así mismo, se van a utilizar las funciones de costo transporte y costo interacción de ProyectoGrado
+# Para este escenario de prueba, se utilizara el edificio SD y el edificio Ga como nodo origen y destino respectivamente
+
 import random
 
 
 class Graph(object):
-    def __init__(self, cost_matrix, rank):
+    def __init__(self, f1_cost_matrix,f2_cost_matrix, numNodes):
         """
         :param cost_matrix:
         :param rank: rank of the cost matrix (Number of nodes, or in this case, number of cities)
         """
-        self.matrix = cost_matrix
-        self.rank = rank
+        self.f1_matrix = f1_cost_matrix
+        self.f2_matrix = f2_cost_matrix
+        self.numNodes = numNodes
         # noinspection PyUnusedLocal
-        self.pheromone = [[1 / (rank * rank) for j in range(rank)] for i in range(rank)]
+
+        # f1: Función Costo de Transporte
+        # f2: Función Costo de Interacción
+
+        self.f1_pheromone = [[1 / (numNodes * numNodes) for j in range(numNodes)] for i in range(numNodes)]
+        self.f2_pheromone = [[1 / (numNodes * numNodes) for j in range(numNodes)] for i in range(numNodes)]
 
 
 class ACO(object):
-    def __init__(self, ant_count, generations, alpha, beta, rho, q,
+    def __init__(self, ant_count, generations, alpha, beta, phi, rho, q0,
                  strategy):
         """
         :param ant_count:
@@ -25,7 +35,9 @@ class ACO(object):
         :param q: pheromone intensity
         :param strategy: pheromone update strategy. 0 - ant-cycle, 1 - ant-quality, 2 - ant-density
         """
-        self.Q = q
+        self.Q = random.uniform(0,1)
+        self.q0 = q0
+        self.phi = phi
         self.rho = rho
         self.beta = beta
         self.alpha = alpha
@@ -33,17 +45,25 @@ class ACO(object):
         self.generations = generations
         self.update_strategy = strategy
 
-    def _update_pheromone(self, graph, ants):
+    def local_update_pheromone(self, graph, ants):
+        for i, row in enumerate(graph.f1_pheromone):
+            for j, col in enumerate(row):
+
+                graph.f1_pheromone[i][j] *= self.phi
+                graph.f2_pheromone[i][j] *= self.phi
+
+    def global_update_pheromone(self, graph, ants):
         for i, row in enumerate(graph.pheromone):
             for j, col in enumerate(row):
 
-                # Eq 2.2
-                graph.pheromone[i][j] *= self.rho
-                for ant in ants:
-                    graph.pheromone[i][j] += ant.pheromone_delta[i][j]
+                graph.f1_pheromone[i][j] *= self.rho
+                graph.f2_pheromone[i][j] *= self.rho
+
+                graph.f1_pheromone[i][j] = min(1, graph.f1_pheromone[i][j] + (graph.numNodes/graph.f1_matrix[i][j]) )
+                graph.f2_pheromone[i][j] = min(1, graph.f2_pheromone[i][j] + (graph.numNodes/graph.f2_matrix[i][j]) )
 
     # noinspection PyProtectedMember
-    def solve(self, graph):
+    def solve(self, graph, dic_edificios_nodos):
         """
         :param graph:
         """
@@ -52,7 +72,7 @@ class ACO(object):
         for gen in range(self.generations):
             # noinspection PyUnusedLocal
             # 0. Preparing a new colony
-            ants = [_Ant(self, graph) for i in range(self.ant_count)]
+            ants = [_Ant(self, graph,dic_edificios_nodos) for i in range(self.ant_count)]
             for ant in ants:
                 for i in range(graph.rank - 1):
                     # 2.0 Choose next node by applying the state transition rule 
@@ -62,54 +82,64 @@ class ACO(object):
                     best_cost = ant.total_cost
                     best_solution = [] + ant.tabu
 
-                # 3. Apply step by step pheromone update
-                ant._update_pheromone_delta()
+                # Apply local pheromone update
+                ant.local_update_pheromone_delta()
 
-            # 5. Apply offline pheromone update
-            self._update_pheromone(graph, ants)
+            # 5. Apply global pheromone update
+            self.global_update_pheromone(graph, ants)
             # print('generation #{}, best cost: {}, path: {}'.format(gen, best_cost, best_solution))
         return best_solution, best_cost
 
 
 class _Ant(object):
-    def __init__(self, aco, graph):
+    def __init__(self, aco, graph,dic_edificios_nodos):
         self.colony = aco
         self.graph = graph
         self.total_cost = 0.0
         self.tabu = []  # tabu list List[ T(i,j) ]
-        self.pheromone_delta = []  # the local increase of pheromone (Delta_T(i,j))
-        self.allowed = [i for i in range(graph.rank)]  # nodes which are allowed for the next selection
-        self.eta = [[0 if i == j else 1 / graph.matrix[i][j] for j in range(graph.rank)] for i in
+        self.f1_pheromone_delta = []  # the local increase of pheromone (Delta_T(i,j))
+        self.f2_pheromone_delta = []  # the local increase of pheromone (Delta_T(i,j))
+        self.allowed = [i for i in range(graph.numNodes)]  # nodes which are allowed for the next selection
+        self.eta = [[0 if i == j else 1 / graph.matrix[i][j] for j in range(graph.numNodes)] for i in
                     range(graph.rank)]  # heuristic information (N(i,j))
 
         # 1. Position each ant in a starting node
-        start = random.randint(0, graph.rank - 1)  # start from any node
-        self.tabu.append(start)
-        self.current = start
-        self.allowed.remove(start)
+        source = dic_edificios_nodos['SD']  # start from Source Node
+        self.destiny = dic_edificios_nodos['GA']
+        self.tabu.append(source)
+        self.current = source
+        self.allowed.remove(source)
 
     #2.1 Choose next node by applying the state transition rule
     def _select_next(self):
+
         denominator = 0
         for i in self.allowed:
-
+            
             # Eq 3b
-            denominator += self.graph.pheromone[self.current][i] ** self.colony.alpha * self.eta[self.current][
+            denominator += self.graph.f1_pheromone[self.current][i] ** self.colony.alpha * self.eta[self.current][
                                                                                             i] ** self.colony.beta
         # noinspection PyUnusedLocal
         # Se inicializa una lista vacía (0's) de probabilidades de que la hormiga estando en el nodo i pueda ir al nodo j
-        probabilities = [0 for i in range(self.graph.rank)]  # probabilities for moving to a node in the next step
-        for i in range(self.graph.rank):
-            try:
-                #Verifica si la hormiga puede ir al nodo j
-                self.allowed.index(i)  # test if allowed list contains i
+        probabilities = [0 for i in range(self.graph.numNodes)]  # probabilities for moving to a node in the next step
 
-                # Eq 3
-                probabilities[i] = self.graph.pheromone[self.current][i] ** self.colony.alpha * \
-                    self.eta[self.current][i] ** self.colony.beta / denominator
+        # Verifica si el nodo actual es el nodo destino
+        if self.current == self.destiny:
+            pass
 
-            except ValueError:
-                pass  # do nothing
+        else:
+            for i in range(self.graph.numNodes):
+                try:
+                    #Verifica si la hormiga puede ir al nodo j
+                    self.allowed.index(i)  # test if allowed list contains i
+
+                    # Eq 3
+                    probabilities[i] = self.graph.pheromone[self.current][i] ** self.colony.alpha * \
+                        self.eta[self.current][i] ** self.colony.beta / denominator
+
+                except ValueError:
+                    pass  # do nothing
+
         # select next node by probability roulette
         selected = 0
         rand = random.random()

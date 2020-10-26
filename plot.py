@@ -9,6 +9,7 @@ def plot(points, path):
     for point in points:
         x.append(point[0])
         y.append(point[1])
+        #plt.text(point[0], point[1] + 0.01,str(point))
     # noinspection PyUnusedLocal
     y = list(map(operator.sub, [max(y) for i in range(len(points))], y))
     plt.plot(x, y, 'co')

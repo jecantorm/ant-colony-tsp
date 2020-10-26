@@ -105,6 +105,10 @@ class _Ant(object):
                 self.allowed.index(i)  # test if allowed list contains i
 
                 # Eq 3
+
+                # if q <= q0    
+
+
                 probabilities[i] = self.graph.pheromone[self.current][i] ** self.colony.alpha * \
                     self.eta[self.current][i] ** self.colony.beta / denominator
 
