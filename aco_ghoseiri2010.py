@@ -141,7 +141,6 @@ class _Ant(object):
                     range(graph.rank)]  # heuristic information (N(i,j))
 
         self.epsilon = epsilon
-        self.f1_eta = min(1,(max(self.graph.f1_cost)-())/() + ) 
 
         # 1. Position each ant in a starting node
         source = dic_edificios_nodos['SD']  # start from Source Node
@@ -151,7 +150,7 @@ class _Ant(object):
         self.allowed.remove(source)
     
     # Se calcula el valor de lambda para resolver la probabilidad P(i,j), según lo enunciado en [ghoseiri2010]
-    def _calculate_Lambda(a,b):
+    def _calculate_Lambda(self,a,b):
 
         if h <= a:
             return 0
@@ -161,6 +160,27 @@ class _Ant(object):
         elif h >= b:
             return 1
 
+    def _generate_first_heuristic_parameter(self,f,i,j):
+
+        max_f1_cost, max_f2_cost = self.graph.get_max_values_costs
+        min_f1_cost, min_f2_cost = self.graph.get_min_values_costs
+
+        if (f == 1):
+            return min(1, (max_f1_cost - self.graph.f1_cost[i][j])/(max_f1_cost - min_f1_cost) + self.epsilon)
+        
+        else:
+            return min(1, (max_f2_cost - self.graph.f2_cost[i][j])/(max_f2_cost - min_f2_cost) + self.epsilon)
+
+    
+    def _generate_second_heuristic_parameter(self):
+        
+        #l = []
+        #label = [float('inf') for i in self.graph.numNodes]
+        #label = [0 for i in self.graph.numNodes]
+        return
+
+        
+        
 
     #2.1 Choose next node by applying the state transition rule
     def _select_next(self, q, q0, a, b, h):
@@ -168,9 +188,10 @@ class _Ant(object):
         denominator = 0
         for i in self.allowed:
             
-            # Eq 3b
-            denominator += self.graph.f1_pheromone[self.current][i] ** self.colony.alpha * self.eta[self.current][
-                                                                                            i] ** self.colony.beta
+            first_term_denominator = ((((self.f1_local_pheromone[self.current][i])**self.colony.alpha) * (_generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
+            second_term_denominator = ((((self.f2_local_pheromone[self.current][i])**self.colony.alpha) * (_generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
+            denominator += first_term_denominator*second_term_denominator*0.5
+                                                                                            
         # noinspection PyUnusedLocal
         # Se inicializa una lista vacía (0's) de probabilidades de que la hormiga estando en el nodo i pueda ir al nodo j
         probabilities = [0 for i in range(self.graph.numNodes)]  # probabilities for moving to a node in the next step
@@ -184,30 +205,34 @@ class _Ant(object):
             ant_lambda = _calculate_Lambda(a,b)
 
             if q <= q0:
+                   
+                for j in self.allowed:
 
-                max_p = 0    
-                max_f1_cost, max_f2_cost = self.graph.get_max_values_costs
-                min_f1_cost, min_f2_cost = self.graph.get_min_values_costs
+                    max_p = 0 
 
+                    for i in self.allowed:
+
+                        first_term = ((((self.f1_local_pheromone[self.current][i])**self.colony.alpha) * (_generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
+                        second_term = ((((self.f2_local_pheromone[self.current][i])**self.colony.alpha) * (_generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
+                        numerator = first_term * second_term * 0.5
+
+                        if numerator > max_p:
+                            max_p = numerator
+                    
+                    if j == max_p:
+                        probabilities[i] = max_p
+                    else:
+                        probabilities[i] = 0
+            
+            else:
 
                 for i in self.allowed:
 
-                    value = ((self.f1_local_pheromone[self.current][i])**self.colony.alpha) * 
+                    first_term_numerator = ((((self.f1_local_pheromone[self.current][i])**self.colony.alpha) * (_generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
+                    second_term_numerator = ((((self.f2_local_pheromone[self.current][i])**self.colony.alpha) * (_generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
+                    numerator = first_term_numerator * second_term_numerator * 0.5
 
-            for i in range(self.graph.numNodes):
-                try:
-                    
-                   maximun = 0 
-                   for j in self.allowed:
-                       self.graph.
-
-
-                    # Eq 3
-                    probabilities[i] = self.graph.pheromone[self.current][i] ** self.colony.alpha * \
-                        self.eta[self.current][i] ** self.colony.beta / denominator
-
-                except ValueError:
-                    pass  # do nothing
+                    probabilities = numerator / denominator
 
         # select next node by probability roulette
         selected = 0
