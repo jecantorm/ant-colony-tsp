@@ -152,7 +152,7 @@ class _Ant(object):
     # Se calcula el valor de lambda para resolver la probabilidad P(i,j), según lo enunciado en [ghoseiri2010]
     def _calculate_Lambda(self,a,b):
 
-        if h <= a:
+        if self.h <= a:
             return 0
         elif a < h and h < b:
             return i/(b-a) - a/(b-a)
