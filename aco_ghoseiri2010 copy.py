@@ -251,14 +251,15 @@ class _Ant(object):
         ant_lambda = self._calculate_Lambda(a,b)
         denominator = 0
         #print("\n","STATUS: Calculating denominator") 
-        for i in self.allowed:
+        for i in self.colony.Out[self.current]:
 
             #print("\n","STATUS: ... for %s index node" %i) 
             # ((self.colony.second_heuristic_parameter[self.current])**self.colony.delta)
 
-            first_term_denominator = ((((self.graph.f1_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
-            second_term_denominator = ((((self.graph.f2_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
-            denominator += first_term_denominator*second_term_denominator*0.5
+            if i in self.allowed:
+                first_term_denominator = ((((self.graph.f1_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
+                second_term_denominator = ((((self.graph.f2_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
+                denominator += first_term_denominator*second_term_denominator*0.5
                                                                                             
         # noinspection PyUnusedLocal
         # Se inicializa una lista vacía (0's) de probabilidades de que la hormiga estando en el nodo i pueda ir al nodo j
@@ -276,14 +277,16 @@ class _Ant(object):
 
                 max_p = 0 
                    
-                for i in self.allowed:
+                for i in self.colony.Out[self.current]:
 
-                    first_term = ((((self.graph.f1_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
-                    second_term = ((((self.graph.f2_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
-                    numerator = first_term * second_term*0.5
+                    if i in self.allowed:
 
-                    if numerator > max_p:
-                        max_p = numerator
+                        first_term = ((((self.graph.f1_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
+                        second_term = ((((self.graph.f2_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
+                        numerator = first_term * second_term*0.5
+
+                        if numerator > max_p:
+                            max_p = numerator
                         
                 if i == max_p:
                     probabilities[i] = max_p
@@ -293,15 +296,19 @@ class _Ant(object):
             
             else:
 
-                for i in self.allowed:
+                for i in self.colony.Out[self.current]:
 
-                    first_term_numerator = ((((self.graph.f1_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
-                    second_term_numerator = ((((self.graph.f2_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
-                    numerator = first_term_numerator * second_term_numerator*0.5
+                    if i in self.allowed:
 
-                    probabilities[i] = numerator / denominator
+                        first_term_numerator = ((((self.graph.f1_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(1,self.current,i)**self.colony.beta))**ant_lambda)
+                        second_term_numerator = ((((self.graph.f2_pheromone[self.current][i])**self.colony.alpha) * (self._generate_first_heuristic_parameter(2,self.current,i)**self.colony.beta))**( 1 - ant_lambda))
+                        numerator = first_term_numerator * second_term_numerator*0.5
 
-                    #print("/n","STATUS: Probability Selected: %s" %probabilities)
+                        probabilities[i] = numerator / denominator
+
+                        #print("/n","STATUS: Probability Selected: %s" %probabilities)
+                    else:
+                        probabilities[i] = 0 
 
         # select next node by probability roulette
         selected = 0
@@ -316,8 +323,8 @@ class _Ant(object):
         #print("\n","STATUS: Selected Node: %s" %selected)        
         # La hormiga se mueve al nodo j
 
-        #print("INFO: Number allowed nodes to visit: %s" %len(self.allowed))
-        #print("INFO: Selected Node: %s" %selected)
+        print("INFO: Number allowed nodes to visit: %s" %len(self.allowed))
+        print("INFO: Selected Node: %s" %selected)
 
         self.allowed.remove(selected)
         self.f1_tabu.append(selected)

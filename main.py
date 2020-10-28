@@ -12,7 +12,7 @@ def main():
     cities = []
     points = []
     # Se lee el archivo .txt se encuentran en orden: el índice de la ciudad, su coordenada en X y su coordenada en Y
-    with open('./data/chn31.txt') as f:
+    with open('/home/juancm/Desktop/Octavo/Tesis/ProyectoGrado/Metaheuristicas/ant-colony-tsp/ant-colony-tsp/data/chn31.txt') as f:
         for line in f.readlines():
             city = line.split(' ')
             cities.append(dict(index=int(city[0]), x=int(city[1]), y=int(city[2])))

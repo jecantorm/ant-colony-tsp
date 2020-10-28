@@ -48,7 +48,7 @@ def calcularMatrizCostoTransporte(coorX,coorY):
     #Se define un radio de cobertura entre cada nodo y la matriz donde se van guardar los costos de transporte
     RC = 0.00012
     numNodes = len(coorX)
-    matrix_ct = 9999999*np.ones((numNodes,numNodes)) 
+    matrix_ct = 99999*np.ones((numNodes,numNodes)) 
     
     i=-1
     for eachCordX in coorX:
@@ -62,14 +62,14 @@ def calcularMatrizCostoTransporte(coorX,coorY):
             if dij <= RC and i!=j:
                 
                 matrix_ct[i][j]=dij
-                plt.plot([coorX[i],coorX[j]],[coorY[i],coorY[j]],'k--',markersize=1)
+                plt.plot([coorX[i],coorX[j]],[coorY[i],coorY[j]],'k--',markersize=1 )
     
     return matrix_ct
 
 # Función que lee el JSON descargado de GeoJSON y plotea los puntos con matplotlib
 def plotGeoJSON():
     
-    f = open('puntos_edificios_nodos_universidad.json','r')
+    f = open('/home/juancm/Desktop/Octavo/Tesis/ProyectoGrado/Modelos Matematicos/puntos_edificios_nodos_universidad.json','r')
     geojson = json.loads(f.read())
     
     print('\n','STATUS: Reading GeoJSON JSON')
@@ -218,9 +218,9 @@ def cargarDatosMatrices(ciclo,dia,horario):
        
     print('INFO: numNodes', numNodes)
     
-    return matrix_ct, matrix_ci,dic_edificios_nodos, numNodes
+    return coorX, coorY, matrix_ct, matrix_ci,dic_edificios_nodos, numNodes
 
 #Guardar en una imagen .eps la red de nodos 
-plt.savefig('Imagenes/cargarDatosMatrices_redNodosUniversidad_%s.eps' %str(datetime.datetime.now()), format='eps')
+#plt.savefig('cargarDatosMatrices_redNodosUniversidad_%s.eps' %str(datetime.datetime.now()), format='eps')
                 
 ## FIN DE LOS MÉTODOS DE CONFIGURACION DE PARAMETROS

@@ -6,7 +6,7 @@
 import math
 
 from aco_ghoseiri2010 import ACO, Graph
-from plot import plot
+from plot_ghoseiri2010 import plot
 
 #Cargar datos de matrices imports
 import cargarDatosMatrices as datos
@@ -27,7 +27,7 @@ def main():
     # f1 : Función Costo de Transporte
     # f2 : Función Costo de Interacción 
 
-    f1_cost_matrix, f2_cost_matrix,dic_edificios_nodos, numNodes = datos.cargarDatosMatrices(h[0],h[1],h[2])
+    coorX, coorY, f1_cost_matrix, f2_cost_matrix,dic_edificios_nodos, numNodes = datos.cargarDatosMatrices(h[0],h[1],h[2])
 
     Q = 10
     q0 = 0.99
@@ -36,18 +36,19 @@ def main():
     beta = 10.0
     alpha = 1.0
     epsilon = 0.001
+    delta = 1
     a = 1
     b = 5
     ant_count = 10
-    generations = 100
+    generations = 5
     update_strategy = 2
 
     # Se instancia ACO, en donde se envía como parámetro: la cantidad de ants, el número de generaciones, alpha, beta, rho, Q, Estrategia para calcular T(i,j)
-    aco = ACO(ant_count, generations, alpha, beta, phi, rho, Q, q0, a, b, epsilon, update_strategy)
+    aco = ACO(ant_count, generations, alpha, beta, phi, rho, Q, q0, a, b, epsilon, delta, update_strategy)
     graph = Graph(f1_cost_matrix,f2_cost_matrix, numNodes)
     path, cost = aco.solve(graph, dic_edificios_nodos)
     print('cost: {}, path: {}'.format(cost, path))
-    plot(points, path)
+    plot(coorX, coorY, path)
 
 if __name__ == '__main__':
     main()
