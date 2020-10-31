@@ -99,13 +99,13 @@ class ACO(object):
         for i, row in enumerate(graph.f1_pheromone):
             for j, col in enumerate(row):
 
-                graph.f1_pheromone[i][j] *= self.rho
-                graph.f2_pheromone[i][j] *= self.rho
-
                 for ant in ants:
 
                     graph.f1_pheromone[i][j] += ant.f1_local_pheromone[i][j]
                     graph.f2_pheromone[i][j] += ant.f2_local_pheromone[i][j]
+                
+                graph.f1_pheromone[i][j] *= self.rho
+                graph.f2_pheromone[i][j] *= self.rho
 
             graph.f1_pheromone[i][j] = min(1, graph.f1_pheromone[i][j] + (graph.numNodes/graph.f1_cost[i][j]) )
             graph.f2_pheromone[i][j] = min(1, graph.f2_pheromone[i][j] + (graph.numNodes/graph.f2_cost[i][j]) )
@@ -215,8 +215,8 @@ class _Ant(object):
         self.f2_total_cost = 0.0
         self.f1_tabu = []  # tabu list List[ T(i,j) ]
         self.f2_tabu = []  # tabu list List[ T(i,j) ]
-        self.f1_local_pheromone = []  # the local increase of pheromone (Delta_T(i,j))
-        self.f2_local_pheromone = []  # the local increase of pheromone (Delta_T(i,j))
+        self.f1_local_pheromone = [[0 for j in range(self.graph.numNodes)] for i in range(self.graph.numNodes)]  # the local increase of pheromone (Delta_T(i,j))
+        self.f2_local_pheromone = [[0 for j in range(self.graph.numNodes)] for i in range(self.graph.numNodes)]  # the local increase of pheromone (Delta_T(i,j))
         self.allowed = [i for i in range(graph.numNodes)]  # nodes which are allowed for the next selection
         self.selected_nodes = []
         #self.eta = [[0 if i == j else 1 / graph.matrix[i][j] for j in range(graph.numNodes)] for i in
@@ -294,7 +294,7 @@ class _Ant(object):
 
             max_p = 0 
             
-            for i in self.allowed:
+            for i in range(self.graph.numNodes):
 
                 try:
 
@@ -318,7 +318,7 @@ class _Ant(object):
             for i in range(self.graph.numNodes):
 
                 try:
-                    self.allowed.index(i)
+                    #self.allowed.index(i)
             
                     #print("\n","INFO: Outgoing nodes: %s" %str(self.colony.Out[self.current]))
 
@@ -406,9 +406,6 @@ class _Ant(object):
 
 
     def local_update_pheromone(self):
-
-        self.f1_local_pheromone = [[0 for j in range(self.graph.numNodes)] for i in range(self.graph.numNodes)]
-        self.f2_local_pheromone = [[0 for j in range(self.graph.numNodes)] for i in range(self.graph.numNodes)] 
 
         for _ in range(1, len(self.f1_tabu)):
             i = self.f1_tabu[_ - 1]

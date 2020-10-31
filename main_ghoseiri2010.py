@@ -31,17 +31,17 @@ def main():
     coorX, coorY, f1_cost_matrix, f2_cost_matrix,dic_edificios_nodos, numNodes = datos.cargarDatosMatrices(h[0],h[1],h[2])
 
     Q = 10
-    q0 = 0.99
-    phi = 0.99
-    rho = 0.99
-    beta = 10.0
-    alpha = 1.0
+    q0 = 0.999
+    phi = 0.999
+    rho = 0.999
+    beta = 2.0
+    alpha = 2.0
     epsilon = 0.001
-    delta = 1
+    delta = 0.1
     a = 70
     b = 131
-    ant_count = 5
-    generations = 3
+    ant_count = 10
+    generations = 10
     update_strategy = 2
 
     # Se instancia ACO, en donde se envía como parámetro: la cantidad de ants, el número de generaciones, alpha, beta, rho, Q, Estrategia para calcular T(i,j)
