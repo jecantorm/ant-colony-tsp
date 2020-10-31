@@ -62,14 +62,14 @@ def calcularMatrizCostoTransporte(coorX,coorY):
             if dij <= RC and i!=j:
                 
                 matrix_ct[i][j]=dij
-                plt.plot([coorX[i],coorX[j]],[coorY[i],coorY[j]],'k--',markersize=1 )
+                plt.plot([coorX[i],coorX[j]],[coorY[i],coorY[j]],'k--',markersize=2 )
     
     return matrix_ct
 
 # Función que lee el JSON descargado de GeoJSON y plotea los puntos con matplotlib
 def plotGeoJSON():
     
-    f = open('/home/juancm/Desktop/Octavo/Tesis/ProyectoGrado/Modelos Matematicos/puntos_edificios_nodos_universidad.json','r')
+    f = open('/home/juancm/Desktop/Octavo/Tesis/ProyectoGrado/Modelos Matematicos/map.json','r')
     geojson = json.loads(f.read())
     
     print('\n','STATUS: Reading GeoJSON JSON')
@@ -95,15 +95,15 @@ def plotGeoJSON():
     plt.plot(coorX, coorY, 'ko', label='Nodes',markersize=2)
     
     # Se plotean el número de cada nodo
-    # cont=-1
-    # for eachCoorX in coorX:
-    #     cont=cont+1
-    #     x=coorX[cont]
-    #     y=coorY[cont]
-    #     textPosX=x; textPosY=y
-    #     offsetX=0.000075; offsetY=0.000025
-    #     texto =str(cont)
-        #plt.text(textPosX + offsetX, textPosY + offsetY, texto, rotation=0, size=1)
+    cont=-1
+    for eachCoorX in coorX:
+        cont=cont+1
+        x=coorX[cont]
+        y=coorY[cont]
+        textPosX=x; textPosY=y
+        offsetX=0.000075; offsetY=0.000025
+        texto =str(cont)
+        plt.text(textPosX + offsetX, textPosY + offsetY, texto, rotation=0, size=6)
     #end
     
     print('\n','STATUS: Printing Edificios - Num. Nodos dictionary')
@@ -216,11 +216,12 @@ def cargarDatosMatrices(ciclo,dia,horario):
     
     matrix_ci,numNodes = darMatrizCantidadPersonasCaminos(coorX,coorY,matrix_ct,dic_edificios_nodos,list_dict_syd)
        
-    print('INFO: numNodes', numNodes)
+    print('\n','INFO: numNodes', numNodes)
+
+    #plt.show()  
     
     return coorX, coorY, matrix_ct, matrix_ci,dic_edificios_nodos, numNodes
 
 #Guardar en una imagen .eps la red de nodos 
-#plt.savefig('cargarDatosMatrices_redNodosUniversidad_%s.eps' %str(datetime.datetime.now()), format='eps')
-                
+#plt.savefig('cargarDatosMatrices_redNodosUniversidad_%s.eps' %str(datetime.datetime.now()), format='eps')               
 ## FIN DE LOS MÉTODOS DE CONFIGURACION DE PARAMETROS
